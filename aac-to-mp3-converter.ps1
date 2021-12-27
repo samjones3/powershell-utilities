@@ -5,6 +5,9 @@
 # This is a problem because anki can't play these natively.
 # So I have been clicky click converting them using vlc
 
+# Note: .ps1 files such as this with unicode strings MUST have
+# BOM in the .ps1 file! VSCode does not do this by default for .ps1 !
+
 # This script watches the downloads folder, and any .aac
 # that shows up is auto converted to mp3.
 # HUGE hassle saver! This thing is real magic. Makes it SOOOO much easier to collab!

@@ -21,9 +21,8 @@ $folder_to_watch = 'C:\Users\rafae\Downloads\'
 $file_name_filter = '*.aac'
 # to archive .aac files
 $destination = 'c:\temp\test\arc\'  
-# below doesn't work due to hebrew in the string!
+# below with hebrew in the string only works if this .ps1 file has a BOM!!
 $DestinationDirMP3 = "C:\data\personal\עברית\cardbuilding\audio-files\hinative"
-# $DestinationDirMP3 = 'C:\data\personal\hinative-mp3'
 Write-Host $DestinationDirMP3
 $Watcher = New-Object IO.FileSystemWatcher $folder_to_watch, $file_name_filter -Property @{ 
     IncludeSubdirectories = $false

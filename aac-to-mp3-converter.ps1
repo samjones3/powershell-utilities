@@ -1,3 +1,16 @@
+
+# 2021-12-26
+# Raf created this because on hinative.com, my main helper
+# uses android or something and all her recordings are .aac files
+# This is a problem because anki can't play these natively.
+# So I have been clicky click converting them using vlc
+
+# This script watches the downloads folder, and any .aac
+# that shows up is auto converted to mp3.
+# HUGE hassle saver!
+
+
+
 $folder_to_watch = 'C:\Users\rafae\Downloads\'
 $file_name_filter = '*.aac'
 # to archive .aac files
@@ -21,19 +34,18 @@ $onCreated = Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier 
 
    # File Checks
     while (Test-LockedFile $path) {
-      $i = 1
-      Write-Host "in loop $i"
       Start-Sleep -Seconds .2
-      $i++
     }
     # Move File
     Write-Host "moving $path to $destination"
     Move-Item $path -Destination $destination -Force -Verbose
     # build the path to the archived .aac file
     $SourceFileName = Split-Path $path -Leaf
-    $DestinationAAC = Join-Path $destination $SourceFileName
+    $DestinationAACwoQuotes = Join-Path $destination $SourceFileName
+    $DestinationAAC = "`"$DestinationAACwoQuotes`""
     $MP3FileName = [System.IO.Path]::ChangeExtension($SourceFileName,".mp3")
-    $DestinationMP3 = Join-Path $DestinationDirMP3 $MP3FileName
+    $DestinationMP3woQuotes = Join-Path $DestinationDirMP3 $MP3FileName
+    $DestinationMP3 = "`"$DestinationMP3woQuotes`""
     $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
     Write-Host "args $VLCArgs"
     Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
@@ -44,7 +56,6 @@ $onCreated = Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier 
 
 function Test-LockedFile {
     param ([parameter(Mandatory=$true)][string]$Path)  
-    Write-Host "Test-LockedFile a-entered $Path"
     $oFile = New-Object System.IO.FileInfo $Path
     if ((Test-Path -Path $Path) -eq $false)
     {
@@ -63,7 +74,6 @@ function Test-LockedFile {
     catch
     {
       # file is locked by a process.
-      Write-Host "file is locked..."
       return $true
     }
   }

@@ -17,7 +17,8 @@
 # $OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding =
 #                    New-Object System.Text.UTF8Encoding
 
-$folder_to_watch = 'C:\Users\rafae\Downloads\'
+# source for this call: https://stackoverflow.com/a/57950443/147637
+$folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
 $file_name_filter = '*.aac'
 # to archive .aac files
 $destination = 'c:\temp\test\arc\'  

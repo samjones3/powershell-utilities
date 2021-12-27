@@ -15,7 +15,7 @@
 # Below is per https://stackoverflow.com/a/49481797/147637
 # So far, not clear it does a thing to help....
 # $OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding =
-                    New-Object System.Text.UTF8Encoding
+#                    New-Object System.Text.UTF8Encoding
 
 $folder_to_watch = 'C:\Users\rafae\Downloads\'
 $file_name_filter = '*.aac'

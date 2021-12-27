@@ -9,20 +9,27 @@
 # that shows up is auto converted to mp3.
 # HUGE hassle saver!
 
-
+# Below is per https://stackoverflow.com/a/49481797/147637
+$OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding =
+                    New-Object System.Text.UTF8Encoding
 
 $folder_to_watch = 'C:\Users\rafae\Downloads\'
 $file_name_filter = '*.aac'
 # to archive .aac files
 $destination = 'c:\temp\test\arc\'  
 # below doesn't work due to hebrew in the string!
-# $DestinationDirMP3 = 'C:\data\personal\עברית\cardbuilding\audio-files\hinative'
+# $DestinationDirMP3 = "C:\data\personal\עברית\cardbuilding\audio-files\hinative"
 $DestinationDirMP3 = 'C:\data\personal\hinative-mp3'
+Write-Host $DestinationDirMP3
 $Watcher = New-Object IO.FileSystemWatcher $folder_to_watch, $file_name_filter -Property @{ 
     IncludeSubdirectories = $false
     NotifyFilter = [IO.NotifyFilters]'FileName, LastWrite'
 }
 $VLCExe = 'C:\Program Files\VideoLAN\VLC\vlc.exe' 
+
+# before registering, unregister it, so there is no collision.
+# the -EA flag tells it to run silently (as will throw an error if event is not already registered)
+Unregister-Event -SourceIdentifier FileCreated -EA 0
 
 $onCreated = Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier FileCreated -Action {
    $path = $Event.SourceEventArgs.FullPath

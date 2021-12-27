@@ -7,9 +7,10 @@
 
 # This script watches the downloads folder, and any .aac
 # that shows up is auto converted to mp3.
-# HUGE hassle saver!
+# HUGE hassle saver! This thing is real magic. Makes it SOOOO much easier to collab!
 
 # Below is per https://stackoverflow.com/a/49481797/147637
+# So far, not clear it does a thing to help....
 $OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding =
                     New-Object System.Text.UTF8Encoding
 
@@ -39,25 +40,25 @@ $onCreated = Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier 
    Write-Host "The file '$name' was $changeType at $timeStamp"
    Write-Host $path
 
-   # File Checks
+    # OK, at this point the event has fired, and it is time to do stuff.
+    
+    # File Checks -- if file is locked, don't try to move it...
     while (Test-LockedFile $path) {
       Start-Sleep -Seconds .2
     }
     # Move File
-    Write-Host "moving $path to $destination"
     Move-Item $path -Destination $destination -Force -Verbose
-    # build the path to the archived .aac file
-    $SourceFileName = Split-Path $path -Leaf
-    $DestinationAACwoQuotes = Join-Path $destination $SourceFileName
-    $DestinationAAC = "`"$DestinationAACwoQuotes`""
+    # build the path to the archived .aac file and the mp3 conversion target
+    $SourceFileName = Split-Path $path -Leaf                            # grabs just the file name off the full path
+    $DestinationAACwoQuotes = Join-Path $destination $SourceFileName    # bolt the file name to the destination path
+    $DestinationAAC = "`"$DestinationAACwoQuotes`""                     # fully quote the destination, otherwise the Hebrew and space chars trash the vlc command
     $MP3FileName = [System.IO.Path]::ChangeExtension($SourceFileName,".mp3")
-    $DestinationMP3woQuotes = Join-Path $DestinationDirMP3 $MP3FileName
+    $DestinationMP3woQuotes = Join-Path $DestinationDirMP3 $MP3FileName # do the same thing with the mp3 output file name...
     $DestinationMP3 = "`"$DestinationMP3woQuotes`""
+    # This next must be double quoted so the powershell variable substitution will do its magic.
     $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
     Write-Host "args $VLCArgs"
     Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
-    
-
 }
 
 

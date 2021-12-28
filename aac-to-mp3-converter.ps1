@@ -24,10 +24,9 @@
 # Find the default /downloads/ folder for the current user.
 # source for this call: https://stackoverflow.com/a/57950443/147637
 $folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
-$file_name_filter = '*.aac'  # We only look for .aac files
-# to archive .aac files
-$destination = 'c:\temp\test\arc\'  
-# below with hebrew in the string only works if this .ps1 file has a BOM!!
+$file_name_filter = '*.aac'         # We only look for .aac files
+$destination = 'c:\temp\test\arc\'  # where to archive .aac files
+# below with hebrew in the string only works if this .ps1 file has a BOM!!  No BOM, the script barfs!
 $DestinationDirMP3 = "C:\data\personal\עברית\cardbuilding\audio-files\hinative"
 Write-Host $DestinationDirMP3
 $Watcher = New-Object IO.FileSystemWatcher $folder_to_watch, $file_name_filter -Property @{ 

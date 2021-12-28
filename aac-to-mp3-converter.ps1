@@ -12,14 +12,9 @@
 # that shows up is auto converted to mp3.
 # HUGE hassle saver! This thing is real magic. Makes it SOOOO much easier to collab!
 
-# Below is per https://stackoverflow.com/a/49481797/147637
-# So far, not clear it does a thing to help....
-# $OutputEncoding = [console]::InputEncoding = [console]::OutputEncoding =
-#                    New-Object System.Text.UTF8Encoding
-
 # source for this call: https://stackoverflow.com/a/57950443/147637
 $folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
-$file_name_filter = '*.aac'
+$file_name_filter = '*.aac'  # We only look for .aac files
 # to archive .aac files
 $destination = 'c:\temp\test\arc\'  
 # below with hebrew in the string only works if this .ps1 file has a BOM!!
@@ -31,7 +26,8 @@ $Watcher = New-Object IO.FileSystemWatcher $folder_to_watch, $file_name_filter -
 }
 $VLCExe = 'C:\Program Files\VideoLAN\VLC\vlc.exe' 
 
-# before registering, unregister it, so there is no collision.
+# before registering, unregister it, so there is no collision when you keep 
+# rerunning this thing during debugging and development.
 # the -EA flag tells it to run silently (as will throw an error if event is not already registered)
 Unregister-Event -SourceIdentifier FileCreated -EA 0
 
@@ -61,6 +57,7 @@ $onCreated = Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier 
     # This next must be double quoted so the powershell variable substitution will do its magic.
     $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
     Write-Host "args $VLCArgs"
+    # This is the vlc command line to convert from .aac to .mp3
     Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
 }
 

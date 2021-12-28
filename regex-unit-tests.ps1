@@ -6,6 +6,10 @@
 # Note that literals in non latin letters must be in double quotes
 # (this is a powershell thing). Also, the .ps1 must have a BOM
 
+# Cool tip! With pester v5.x and VSCode in powershell mode, 
+# the editor has a little "run tests" link above the Describe
+# keyword, so you can run tests right in the editor... sweet!
+
 Describe "regex validation suite" {
     It "first test" {
         $string = 'test'

@@ -26,6 +26,7 @@
 $folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
 $file_name_filter = '*.aac'         # We only look for .aac files
 $destination = 'c:\temp\test\arc\'  # where to archive .aac files
+# literal Hebrew strings ALSO must be in double-quotes... single quotes don't work around unicode in powershell.
 # below with hebrew in the string only works if this .ps1 file has a BOM!!  No BOM, the script barfs!
 $DestinationDirMP3 = "C:\data\personal\עברית\cardbuilding\audio-files\hinative"
 Write-Host $DestinationDirMP3

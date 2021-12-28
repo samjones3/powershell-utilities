@@ -12,6 +12,13 @@
 # that shows up is auto converted to mp3.
 # HUGE hassle saver! This thing is real magic. Makes it SOOOO much easier to collab!
 
+# NOTE! This code registers an event handler, that will stay in memory FOREVER
+# (well, until the system reboots or until you UNREGISTER the handler!)
+# To get the code to stop, you need to unregister the event handler.
+# At a ps prompt:  Unregister-Event FileCreated
+
+
+# Find the default /downloads/ folder for the current user.
 # source for this call: https://stackoverflow.com/a/57950443/147637
 $folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
 $file_name_filter = '*.aac'  # We only look for .aac files
@@ -85,3 +92,12 @@ function Test-LockedFile {
       return $true
     }
   }
+
+
+  # To get the code to stop, you need to unregister the event handler.
+  # At a ps prompt:  Unregister-Event FileCreated
+
+  # Now one issue with this script is that it is kind of a TSR. It stays resident, but does not continue to run.
+  # Here is a "normal powershell approach" to this, which has an empty loop running, so that you can press
+  # ctrl-C and the event gets unregistered and the queue cleaned up.
+  # https://community.idera.com/database-tools/powershell/powertips/b/tips/posts/using-filesystemwatcher-correctly-part-2#

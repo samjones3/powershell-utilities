@@ -5,22 +5,22 @@
 # This is a problem because anki can't play these natively.
 # So I have been clicky click converting them using vlc
 
+# This script watches the downloads folder, and any .aac
+# that shows up is auto converted to mp3.
+# HUGE hassle saver! This thing is real magic. Makes it SOOOO much easier to collab!
+
 # Note: .ps1 files such as this with unicode strings MUST have
 # BOM in the .ps1 file! VSCode does not do this by default for .ps1 !
 # See references:
 # -- https://stackoverflow.com/q/70499875/147637
 # -- https://stackoverflow.com/a/54790355/147637
 
-# This script watches the downloads folder, and any .aac
-# that shows up is auto converted to mp3.
-# HUGE hassle saver! This thing is real magic. Makes it SOOOO much easier to collab!
-
 # NOTE! This code registers an event handler, that will stay in memory FOREVER
 # (well, until the system reboots or until you UNREGISTER the handler!)
 # To get the code to stop, you need to unregister the event handler.
 # At a ps prompt:  Unregister-Event FileCreated
 
-
+# ---------------------------------------------------------------------------------------------
 # Find the default /downloads/ folder for the current user.
 # source for this call: https://stackoverflow.com/a/57950443/147637
 $folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
@@ -40,7 +40,7 @@ $VLCExe = 'C:\Program Files\VideoLAN\VLC\vlc.exe'
 # the -EA flag tells it to run silently (as will throw an error if event is not already registered)
 Unregister-Event -SourceIdentifier FileCreated -EA 0
 
-$onCreated = Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier FileCreated -Action {
+Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier FileCreated -Action {
    $path = $Event.SourceEventArgs.FullPath
    $name = $Event.SourceEventArgs.Name
    $changeType = $Event.SourceEventArgs.ChangeType
@@ -69,7 +69,6 @@ $onCreated = Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier 
     # This is the vlc command line to convert from .aac to .mp3
     Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
 }
-
 
 function Test-LockedFile {
     param ([parameter(Mandatory=$true)][string]$Path)  

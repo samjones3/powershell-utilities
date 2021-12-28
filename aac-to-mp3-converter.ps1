@@ -7,6 +7,9 @@
 
 # Note: .ps1 files such as this with unicode strings MUST have
 # BOM in the .ps1 file! VSCode does not do this by default for .ps1 !
+# See references:
+# -- https://stackoverflow.com/q/70499875/147637
+# -- https://stackoverflow.com/a/54790355/147637
 
 # This script watches the downloads folder, and any .aac
 # that shows up is auto converted to mp3.

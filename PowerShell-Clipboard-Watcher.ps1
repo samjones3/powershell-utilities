@@ -5,7 +5,7 @@
 # This is expected to run fine on Win10 and Win11 (and probably other versions)
 
 # This script binds the OS functions to monitor when new items are put on the clipbpard.
-# It is a powershell script, that has been tested to work. 
+# It is a powershell script, that has been tested to work on Win10 and Win11.
 
 [CmdletBinding()]
 param

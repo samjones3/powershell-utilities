@@ -45,7 +45,6 @@ function Unregister-ClipboardWatcher
  
 function Register-ClipboardWatcherType
 {
-#    Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -Language CSharpVersion3 -TypeDefinition `
     Add-Type -ReferencedAssemblies System.Windows.Forms, System.Drawing -Language CSharp -TypeDefinition `
     @"
 using System;

@@ -31,9 +31,24 @@ Describe "regex validation suite" {
         
         $string = "עברית for the win.pse"
         $string -match '^.*[\u0590-\u05ea].+$' | Should -Be $true
+    }
+    It "filenames - hebrew" {
+
+        "pronunciation_he_לְבַטֵּל.mp3" -match '^.*[\u0590-\u05ea].+$' | Should -Be $true
+        "pronunciation_he_לְבַטֵּל." -match '^.*[\u0590-\u05ea].+$' | Should -Be $true
+
+        "pronunciation_he_לְבַטֵּל" -match '^.*[\u0590-\u05ea].+$' | Should -Be $true
+        "הייתי רוצה להסב לו קצת כאב.mp4" -match '^.*[\u0590-\u05ea].+$' | Should -Be $true
+    }    
+    It "filenames - non-hebrew" {
+
+        "President's Report 12.14.21.pdf" -match '^.*[\u0590-\u05ea].+$' | Should -Be $false
+        "Minutes Board Meeting July_13_2021 7.13.21.pdf" -match '^.*[\u0590-\u05ea].+$' | Should -Be $false
+
         
     }
 
+    
 }
 
 

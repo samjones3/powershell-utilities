@@ -112,7 +112,7 @@ function Test-LockedFile {
   try {
     # At the end of the script... 
     while ($true) {
-        Start-Sleep -Seconds 1
+        Start-Sleep -Seconds .2
     }    
 }
 catch {}

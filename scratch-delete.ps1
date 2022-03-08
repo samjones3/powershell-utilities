@@ -24,7 +24,8 @@
 # Find the default /downloads/ folder for the current user.
 # source for this call: https://stackoverflow.com/a/57950443/147637
 $folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
-$file_name_filter = '*.aac'         # We only look for .aac files
+$file_name_filter = '*.*'           # We look all new files, since we cannot filter on multiple extensions
+$extensionarray = '.aac', '.wav'    # array of extensions we are interested in
 $destination = 'c:\temp\test\arc\'  # where to archive .aac files
 # literal Hebrew strings ALSO must be in double-quotes... single quotes don't work around unicode in powershell.
 # below with hebrew in the string only works if this .ps1 file has a BOM!!  No BOM, the script barfs!
@@ -44,16 +45,25 @@ Unregister-Event -SourceIdentifier FileCreated -EA 0
 Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier FileCreated -Action {
    $path = $Event.SourceEventArgs.FullPath
    $name = $Event.SourceEventArgs.Name
+   $fileextension = [System.IO.Path]::GetExtension($name) # extract extension as string from filename
    $changeType = $Event.SourceEventArgs.ChangeType
    $timeStamp = $Event.TimeGenerated
-   Write-Host "The file '$name' was $changeType at $timeStamp"
-   Write-Host $path
+   $pattern = '[^a-zA-Z3]'
+   $codecName = $fileextension -replace $pattern, ''   # strip the period out of the extension
 
+   function ConvertAndProcessFile() {
+    param (
+        [parameter(Mandatory=$true)][string]$Path,
+        [parameter(Mandatory=$true)][string]$extensiontoprocess
+    )  
+    $voice = New-Object -com SAPI.SpVoice
+    $voice.Rate = -5
+    $voice.Speak(("Convert and processs" ))
     # OK, at this point the event has fired, and it is time to do stuff.
     
     # File Checks -- if file is locked, don't try to move it...
     while (Test-LockedFile $path) {
-      Start-Sleep -Seconds .2
+        Start-Sleep -Seconds .1
     }
     # Move File
     Move-Item $path -Destination $destination -Force -Verbose
@@ -61,62 +71,77 @@ Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier FileCreated -
     $SourceFileName = Split-Path $path -Leaf                            # grabs just the file name off the full path
     $DestinationAACwoQuotes = Join-Path $destination $SourceFileName    # bolt the file name to the destination path
     $DestinationAAC = "`"$DestinationAACwoQuotes`""                     # fully quote the destination, otherwise the Hebrew and space chars trash the vlc command
-    $MP3FileName = [System.IO.Path]::ChangeExtension($SourceFileName,".mp3")
+    $MP3FileName = [System.IO.Path]::ChangeExtension($SourceFileName, $fileextension)
     $DestinationMP3woQuotes = Join-Path $DestinationDirMP3 $MP3FileName # do the same thing with the mp3 output file name...
     $DestinationMP3 = "`"$DestinationMP3woQuotes`""
     # This next must be double quoted so the powershell variable substitution will do its magic.
+    $voice.Speak(("vlcargs" ))
+    
     $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
     Write-Host "args $VLCArgs"
     # This is the vlc command line to convert from .aac to .mp3
     Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
-}
+    }
 
 function Test-LockedFile {
     param ([parameter(Mandatory=$true)][string]$Path)  
     $oFile = New-Object System.IO.FileInfo $Path
+    $voice.Speak(("test locked file" ))
     if ((Test-Path -Path $Path) -eq $false)
     {
-      return $false
+        return $false
     }
-  
+    
     try
     {
-      $oStream = $oFile.Open([System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+        $oStream = $oFile.Open([System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
         if ($oStream)
         {
-          $oStream.Close()
+            $oStream.Close()
         }
         $false
     }
     catch
     {
-      # file is locked by a process.
-      return $true
+        # file is locked by a process.
+        return $true
     }
-  }
+    }
 
 
-  # To get the code to stop, you need to unregister the event handler.
-  # At a ps prompt:  Unregister-Event FileCreated
-  # See registered events w cmd: Get-EventSubscriber
 
-  # Now one issue with this script is that it is kind of a TSR. It stays resident, but does not continue to run.
-  # Here is a "normal powershell approach" to this, which has an empty loop running, so that you can press
-  # ctrl-C and the event gets unregistered and the queue cleaned up.
-  # https://community.idera.com/database-tools/powershell/powertips/b/tips/posts/using-filesystemwatcher-correctly-part-2#
+   Write-Host "The file '$name' with extension '$fileextension' was $changeType at $timeStamp"
+   Write-Host "'$path' and the codecname is '$codecName' and the extensionarray has '$extensionarray' elements"
+   
+    foreach ( $extensiontoprocess in $extensionarray )
+    {
+        $voice = New-Object -com SAPI.SpVoice
+        $voice.Rate = -5
+
+        if ($fileextension -eq $extensiontoprocess)
+        {
+            $voice.Speak(( "extension processing is '$extensiontoprocess'" ))
+
+            ConvertAndProcessFile($name,$extensiontoprocess)
+        }
+    }  
+
+  
+    # To get the code to stop, you need to unregister the event handler.
+    # At a ps prompt:  Unregister-Event FileCreated
+  
+    # Now one issue with this script is that it is kind of a TSR. It stays resident, but does not continue to run.
+    # Here is a "normal powershell approach" to this, which has an empty loop running, so that you can press
+    # ctrl-C and the event gets unregistered and the queue cleaned up.
+    # https://community.idera.com/database-tools/powershell/powertips/b/tips/posts/using-filesystemwatcher-correctly-part-2#
+      
 
 
-  # The below is per https://stackoverflow.com/a/71368404/147637
-  # Raf, the noob at event driven coding, didn't see the need for it until now.
-  # But now you can debug! 
-  try {
-    # At the end of the script... 
-    while ($true) {
-        Start-Sleep -Seconds 1
-    }    
 }
-catch {}
-Finally {
-    # Work with CTRL + C exit too !
-    Unregister-Event -SourceIdentifier FileCreated 
-}
+
+Copy-Item 'C:\TEMP\test\arc\19.aac' -Destination 'C:\Users\rafae\Downloads\test94539.aac' -Force -Verbose
+
+#>
+   <#
+
+  #>

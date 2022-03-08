@@ -15,16 +15,21 @@
 # -- https://stackoverflow.com/q/70499875/147637
 # -- https://stackoverflow.com/a/54790355/147637
 
-# NOTE! This code registers an event handler, that will stay in memory FOREVER
-# (well, until the system reboots or until you UNREGISTER the handler!)
-# To get the code to stop, you need to unregister the event handler.
+# NOTE! This code registers an event handler, that will stay in memory until process exits.
+# (or, until the system reboots or until you UNREGISTER the handler!)
+# To get the code to stop, press ctrl-c or exit the process. 
 # At a ps prompt:  Unregister-Event FileCreated
+
+# Put the below in an icon in startup
+# which should be here: C:\Users\rafae\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+# C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -NoProfile -File C:\develop\utils\powershell\aac-to-mp3-converter.ps1
 
 # ---------------------------------------------------------------------------------------------
 # Find the default /downloads/ folder for the current user.
 # source for this call: https://stackoverflow.com/a/57950443/147637
 $folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
 $file_name_filter = '*.aac'         # We only look for .aac files
+$eventname = 'FileCreatedEvent'
 $destination = 'c:\temp\test\arc\'  # where to archive .aac files
 # literal Hebrew strings ALSO must be in double-quotes... single quotes don't work around unicode in powershell.
 # below with hebrew in the string only works if this .ps1 file has a BOM!!  No BOM, the script barfs!
@@ -39,9 +44,9 @@ $VLCExe = 'C:\Program Files\VideoLAN\VLC\vlc.exe'
 # before registering, unregister it, so there is no collision when you keep 
 # rerunning this thing during debugging and development.
 # the -EA flag tells it to run silently (as will throw an error if event is not already registered)
-Unregister-Event -SourceIdentifier FileCreated -EA 0
+Unregister-Event -SourceIdentifier $eventname -EA 0
 
-Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier FileCreated -Action {
+Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier $eventname -Action {
    $path = $Event.SourceEventArgs.FullPath
    $name = $Event.SourceEventArgs.Name
    $changeType = $Event.SourceEventArgs.ChangeType
@@ -118,5 +123,5 @@ function Test-LockedFile {
 catch {}
 Finally {
     # Work with CTRL + C exit too !
-    Unregister-Event -SourceIdentifier FileCreated 
+    Unregister-Event -SourceIdentifier $eventname 
 }

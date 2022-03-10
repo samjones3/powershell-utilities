@@ -15,18 +15,28 @@
 # -- https://stackoverflow.com/q/70499875/147637
 # -- https://stackoverflow.com/a/54790355/147637
 
-# NOTE! This code registers an event handler, that will stay in memory FOREVER
-# (well, until the system reboots or until you UNREGISTER the handler!)
-# To get the code to stop, you need to unregister the event handler.
+# NOTE! This code registers an event handler, that will stay in memory until process exits.
+# (or, until the system reboots or until you UNREGISTER the handler!)
+# To get the code to stop, press ctrl-c or exit the process. 
 # At a ps prompt:  Unregister-Event FileCreated
+
+# Put the below in an icon in startup
+# which should be here: C:\Users\rafae\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+# aka: %appdata%\Microsoft\Windows\Start Menu\Programs\Startup\
+# C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -NoProfile -File C:\develop\utils\powershell\aac-to-mp3-converter.ps1
+# AND, on the icon properties, set it to Run Minimized
 
 # ---------------------------------------------------------------------------------------------
 # Find the default /downloads/ folder for the current user.
 # source for this call: https://stackoverflow.com/a/57950443/147637
 $folder_to_watch =  (New-Object -ComObject Shell.Application).NameSpace('shell:Downloads').Self.Path
 $file_name_filter = '*.*'           # We look all new files, since we cannot filter on multiple extensions
-$extensionarray = '.aac', '.wav'    # array of extensions we are interested in
-$destination = 'c:\temp\test\arc\'  # where to archive .aac files
+                                    # Basically, we can either register multiple events (one per extension)
+                                    # or we look for all file create events, and filter in our code. This script
+                                    # does the latter.
+$extensionarray = '.aac', '.wav', '.mp4'    # array of extensions we are interested in. Just add to this list to convert to mp3
+$eventname = 'FileCreatedEvent2'
+$destination = 'c:\temp\test\arc\'  # where to archive downloaded files
 # literal Hebrew strings ALSO must be in double-quotes... single quotes don't work around unicode in powershell.
 # below with hebrew in the string only works if this .ps1 file has a BOM!!  No BOM, the script barfs!
 $DestinationDirMP3 = "C:\data\personal\עברית\cardbuilding\audio-files\hinative"
@@ -40,9 +50,9 @@ $VLCExe = 'C:\Program Files\VideoLAN\VLC\vlc.exe'
 # before registering, unregister it, so there is no collision when you keep 
 # rerunning this thing during debugging and development.
 # the -EA flag tells it to run silently (as will throw an error if event is not already registered)
-Unregister-Event -SourceIdentifier FileCreated -EA 0
+Unregister-Event -SourceIdentifier $eventname -EA 0
 
-Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier FileCreated -Action {
+Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier $eventname -Action {
    $path = $Event.SourceEventArgs.FullPath
    $name = $Event.SourceEventArgs.Name
    $fileextension = [System.IO.Path]::GetExtension($name) # extract extension as string from filename
@@ -50,61 +60,59 @@ Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier FileCreated -
    $timeStamp = $Event.TimeGenerated
    $pattern = '[^a-zA-Z3]'
    $codecName = $fileextension -replace $pattern, ''   # strip the period out of the extension
+   $sizeinbytes = (Get-Item $path).length
 
-  <#  function ConvertAndProcessFile() {
-    param (
-        [parameter(Mandatory=$true)][string]$Path,
-        [parameter(Mandatory=$true)][string]$extensiontoprocess
-    ) 
-    }  #>
-    
+   Write-Host "The file '$name' with extension '$fileextension' was $changeType at $timeStamp of size $sizeinbytes"
 
 function Test-LockedFile {
     param ([parameter(Mandatory=$true)][string]$Path)  
     $oFile = New-Object System.IO.FileInfo $Path
-    $voice.Speak(("test locked file" ))
     if ((Test-Path -Path $Path) -eq $false)
-    {
-        return $false
-    }
-    
-    try
-    {
-        $oStream = $oFile.Open([System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
-        if ($oStream)
         {
-            $oStream.Close()
+            return $false
         }
-        $false
-    }
-    catch
-    {
-        # file is locked by a process.
-        return $true
-    }
-    }
-
-
-
-   Write-Host "The file '$name' with extension '$fileextension' was $changeType at $timeStamp"
-   Write-Host "'$path' and the codecname is '$codecName' and the extensionarray has '$extensionarray' elements"
-   
-    foreach ( $extensiontoprocess in $extensionarray )
-    {
-        $voice = New-Object -com SAPI.SpVoice
-        $voice.Rate = -5
-
-        if ($fileextension -eq $extensiontoprocess)
+        
+    try
         {
-            $voice.Speak(( "extension processing is '$extensiontoprocess'" ))
-
-         #   ConvertAndProcessFile($name,$extensiontoprocess)
-
-            $voice = New-Object -com SAPI.SpVoice
-            $voice.Rate = -5
-            $voice.Speak(("Convert and processs" ))
+            $oStream = $oFile.Open([System.IO.FileMode]::Open, [System.IO.FileAccess]::ReadWrite, [System.IO.FileShare]::None)
+            if ($oStream)
+            {
+                $oStream.Close()
+                return $false
+            }
+            $false
+        }
+        catch
+            {
+                # file is locked by a process.
+                return $true
+            }
+    }
+   
+:processingLoop  foreach ( $extensiontoprocess in $extensionarray )
+    {
+         if ($fileextension -eq $extensiontoprocess)
+        {
             # OK, at this point the event has fired, and it is time to do stuff.
-            
+            Write-Host "'$path' and the codecname is '$codecName' and the extensionarray has '$extensionarray' elements"
+   
+           Write-Host " FILE $path is size "(Get-Item $path).length
+           $i = 1 
+           while (((Get-Item $path).length -eq 0kb) -and  ([System.IO.File]::Exists($path))) 
+                {
+                # This loop is actually constructive, because it forces the process to wait until the 
+                # the file has been written out....
+                Write-Host "file size of $path is " (Get-Item $path).length
+                Start-Sleep -Seconds .1 
+
+                
+                $i++
+                    # If the file stays at 0 bytes, get out of the loop and forget this file...
+                    # means there is a download issue.
+                if ($i=11) {continue processingLoop}
+                 
+             }
+                     
             # File Checks -- if file is locked, don't try to move it...
             while (Test-LockedFile $path) {
                 Start-Sleep -Seconds .1
@@ -115,22 +123,20 @@ function Test-LockedFile {
             $SourceFileName = Split-Path $path -Leaf                            # grabs just the file name off the full path
             $DestinationAACwoQuotes = Join-Path $destination $SourceFileName    # bolt the file name to the destination path
             $DestinationAAC = "`"$DestinationAACwoQuotes`""                     # fully quote the destination, otherwise the Hebrew and space chars trash the vlc command
-            $MP3FileName = [System.IO.Path]::ChangeExtension($SourceFileName, $fileextension)
+            $MP3FileName = [System.IO.Path]::ChangeExtension($SourceFileName,".mp3")
             $DestinationMP3woQuotes = Join-Path $DestinationDirMP3 $MP3FileName # do the same thing with the mp3 output file name...
             $DestinationMP3 = "`"$DestinationMP3woQuotes`""
             # This next must be double quoted so the powershell variable substitution will do its magic.
-            $voice.Speak(("vlcargs" ))
-            
-            $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=$extensiontoprocess,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
+            $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
             Write-Host "args $VLCArgs"
             # This is the vlc command line to convert from .aac to .mp3
             Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
         
         }
     }  
-
-  
-    # To get the code to stop, you need to unregister the event handler.
+}
+    # To get the code to stop, just hit ctrl-C in the script box. 
+    # optional in debugger: you can to unregister the event handler.
     # At a ps prompt:  Unregister-Event FileCreated
   
     # Now one issue with this script is that it is kind of a TSR. It stays resident, but does not continue to run.
@@ -138,9 +144,6 @@ function Test-LockedFile {
     # ctrl-C and the event gets unregistered and the queue cleaned up.
     # https://community.idera.com/database-tools/powershell/powertips/b/tips/posts/using-filesystemwatcher-correctly-part-2#
       
-
-
-}
 
   # The below is per https://stackoverflow.com/a/71368404/147637
   # Raf, the noob at event driven coding, didn't see the need for it until now.
@@ -150,9 +153,9 @@ function Test-LockedFile {
     while ($true) {
         Start-Sleep -Seconds .2
     }    
-}
+    }
 catch {}
 Finally {
     # Work with CTRL + C exit too !
-    Unregister-Event -SourceIdentifier FileCreated 
-}
+    Unregister-Event -SourceIdentifier $eventname 
+    }

@@ -22,6 +22,7 @@
 
 # Put the below in an icon in startup
 # which should be here: C:\Users\rafae\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
+# aka: %appdata%\Microsoft\Windows\Start Menu\Programs\Startup\
 # C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -NoProfile -File C:\develop\utils\powershell\aac-to-mp3-converter.ps1
 
 # ---------------------------------------------------------------------------------------------
@@ -60,6 +61,16 @@ Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier $eventname -A
     while (Test-LockedFile $path) {
       Start-Sleep -Seconds .2
     }
+    If (Test-Path $path) {
+      If ((Get-Item $path).length -gt 0kb) {
+        Write-Host " FILE IS OK FOR PROCESSING!"
+        }
+    Else {
+      Write-Host " FILE HAS 0 BYTES AT $path"
+      Write-Host " VALIDATION FINISHED "
+      break
+      }
+  }
     # Move File
     Move-Item $path -Destination $destination -Force -Verbose
     # build the path to the archived .aac file and the mp3 conversion target

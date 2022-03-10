@@ -15,16 +15,10 @@
 # -- https://stackoverflow.com/q/70499875/147637
 # -- https://stackoverflow.com/a/54790355/147637
 
-# NOTE! This code registers an event handler, that will stay in memory until process exits.
-# (or, until the system reboots or until you UNREGISTER the handler!)
-# To get the code to stop, press ctrl-c or exit the process. 
+# NOTE! This code registers an event handler, that will stay in memory FOREVER
+# (well, until the system reboots or until you UNREGISTER the handler!)
+# To get the code to stop, you need to unregister the event handler.
 # At a ps prompt:  Unregister-Event FileCreated
-
-# Put the below in an icon in startup
-# which should be here: C:\Users\rafae\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup
-# aka: %appdata%\Microsoft\Windows\Start Menu\Programs\Startup\
-# C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -NoProfile -File C:\develop\utils\powershell\aac-to-mp3-converter.ps1
-# AND, on the icon properties, set it to Run Minimized
 
 # ---------------------------------------------------------------------------------------------
 # Find the default /downloads/ folder for the current user.
@@ -108,7 +102,7 @@ function Test-LockedFile {
                 
                 $i++
                     # If the file stays at 0 bytes, get out of the loop and forget this file...
-                    # means there is a download issue.
+                    # means there is a download
                 if ($i=11) {continue processingLoop}
                  
              }

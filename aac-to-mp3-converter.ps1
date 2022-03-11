@@ -46,7 +46,8 @@ $VLCExe = 'C:\Program Files\VideoLAN\VLC\vlc.exe'
 # the -EA flag tells it to run silently (as will throw an error if event is not already registered)
 Unregister-Event -SourceIdentifier $eventname -EA 0
 
-Register-ObjectEvent $Watcher -EventName Created -SourceIdentifier $eventname -Action {
+# need to add renamed to Created....
+Register-ObjectEvent $Watcher -EventName Changed -SourceIdentifier $eventname -Action {
    $path = $Event.SourceEventArgs.FullPath
    $name = $Event.SourceEventArgs.Name
    $fileextension = [System.IO.Path]::GetExtension($name) # extract extension as string from filename
@@ -113,6 +114,7 @@ function Test-LockedFile {
             }
             # Move File
             Move-Item $path -Destination $destination -Force -Verbose
+            Start-Sleep -Seconds .1
             # build the path to the archived .aac file and the mp3 conversion target
             $SourceFileName = Split-Path $path -Leaf                            # grabs just the file name off the full path
             $DestinationAACwoQuotes = Join-Path $destination $SourceFileName    # bolt the file name to the destination path
@@ -123,9 +125,18 @@ function Test-LockedFile {
             # This next must be double quoted so the powershell variable substitution will do its magic.
             $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
             Write-Host "args $VLCArgs"
-            # This is the vlc command line to convert from .aac to .mp3
-            Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
-        
+            # @@@ we have an issue here... VLC is never called... file size test always false
+            Write-Host "DestinationAAC: $DestinationAAC  "(Get-Item $DestinationAAC).length "and "([System.IO.File]::Exists($DestinationAAC)) " and "
+
+            Write-Host "DestinationAACwoQuotes: $DestinationAACwoQuotes  "(Get-Item $DestinationAACwoQuotes).length "and "([System.IO.File]::Exists($DestinationAACwoQuotes)) " and "
+            
+            if (((Get-Item $DestinationAACwoQuotes).length -gt 0kb) -and  ([System.IO.File]::Exists($DestinationAACwoQuotes)))
+                {
+                    # This is the vlc command line to convert from .aac to .mp3
+                    Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
+                } else {
+                    Write-Host "NOT CONVERTED: File to convert $DestinationAAC is missing or 0 bytes"
+                }
         }
     }  
 }

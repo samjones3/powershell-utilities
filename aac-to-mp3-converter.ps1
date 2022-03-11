@@ -4,8 +4,9 @@
 # uses android or something and all her recordings are .aac files
 # This is a problem because anki can't play these natively.
 # So I have been clicky click converting them using vlc
+# (And a newer collaborator submits a lot of .wav files, which are LARGE)
 
-# This script watches the downloads folder, and any .aac
+# This script watches the downloads folder, and any .aac, .wav and .mp4
 # that shows up is auto converted to mp3.
 # HUGE hassle saver! This thing is real magic. Makes it SOOOO much easier to collab!
 
@@ -15,10 +16,15 @@
 # -- https://stackoverflow.com/q/70499875/147637
 # -- https://stackoverflow.com/a/54790355/147637
 
-# NOTE! This code registers an event handler, that will stay in memory FOREVER
-# (well, until the system reboots or until you UNREGISTER the handler!)
-# To get the code to stop, you need to unregister the event handler.
-# At a ps prompt:  Unregister-Event FileCreated
+# Usage:
+# Raf creates an icon to this ps1 in his startup folder:
+# %appdata%\Microsoft\Windows\Start Menu\Programs\Startup
+# The target for the shortcut is:
+#     C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -NoProfile -File C:\develop\utils\powershell\aac-to-mp3-converter.ps1
+#
+# Set it to run minimized
+# And voila.... watch the output folder and watch the magic!
+
 
 # ---------------------------------------------------------------------------------------------
 # Find the default /downloads/ folder for the current user.
@@ -46,7 +52,9 @@ $VLCExe = 'C:\Program Files\VideoLAN\VLC\vlc.exe'
 # the -EA flag tells it to run silently (as will throw an error if event is not already registered)
 Unregister-Event -SourceIdentifier $eventname -EA 0
 
-# need to add renamed to Created....
+# We look for Changed events, which shows us file creations and renames.... and
+# when firefox downloads a file as .part, it seems to rename it to .wav, and looking for
+# Created misses that event...
 Register-ObjectEvent $Watcher -EventName Changed -SourceIdentifier $eventname -Action {
    $path = $Event.SourceEventArgs.FullPath
    $name = $Event.SourceEventArgs.Name
@@ -125,26 +133,24 @@ function Test-LockedFile {
             # This next must be double quoted so the powershell variable substitution will do its magic.
             $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
             Write-Host "args $VLCArgs"
-            # @@@ we have an issue here... VLC is never called... file size test always false
-            Write-Host "DestinationAAC: $DestinationAAC  "(Get-Item $DestinationAAC).length "and "([System.IO.File]::Exists($DestinationAAC)) " and "
 
+            # The following section shows that the file test functions fail if the file name is double quoted...
+            Write-Host "DestinationAAC: $DestinationAAC  "(Get-Item $DestinationAAC).length "and "([System.IO.File]::Exists($DestinationAAC)) " and "
             Write-Host "DestinationAACwoQuotes: $DestinationAACwoQuotes  "(Get-Item $DestinationAACwoQuotes).length "and "([System.IO.File]::Exists($DestinationAACwoQuotes)) " and "
             
+
             if (((Get-Item $DestinationAACwoQuotes).length -gt 0kb) -and  ([System.IO.File]::Exists($DestinationAACwoQuotes)))
                 {
-                    # This is the vlc command line to convert from .aac to .mp3
+                    # This is the vlc command line to convert from aac/wav/mp4 to .mp3
                     Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
                 } else {
-                    Write-Host "NOT CONVERTED: File to convert $DestinationAAC is missing or 0 bytes"
+                    Write-Host "NOT CONVERTED: File to convert $DestinationAACwoQuotes is missing or 0 bytes"
                 }
         }
     }  
 }
     # To get the code to stop, just hit ctrl-C in the script box. 
-    # optional in debugger: you can to unregister the event handler.
-    # At a ps prompt:  Unregister-Event FileCreated
   
-    # Now one issue with this script is that it is kind of a TSR. It stays resident, but does not continue to run.
     # Here is a "normal powershell approach" to this, which has an empty loop running, so that you can press
     # ctrl-C and the event gets unregistered and the queue cleaned up.
     # https://community.idera.com/database-tools/powershell/powertips/b/tips/posts/using-filesystemwatcher-correctly-part-2#
@@ -162,5 +168,6 @@ function Test-LockedFile {
 catch {}
 Finally {
     # Work with CTRL + C exit too !
+    # Clean up the registered event...
     Unregister-Event -SourceIdentifier $eventname 
     }

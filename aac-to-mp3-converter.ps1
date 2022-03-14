@@ -54,7 +54,8 @@ Unregister-Event -SourceIdentifier $eventname -EA 0
 
 # We look for Changed events, which shows us file creations and renames.... and
 # when firefox downloads a file as .part, it seems to rename it to .wav, and looking for
-# Created misses that event...
+# Created event misses that event...
+# alternate approach, not used, register to both Created and Renamed: https://stackoverflow.com/a/71445023/147637
 Register-ObjectEvent $Watcher -EventName Changed -SourceIdentifier $eventname -Action {
    $path = $Event.SourceEventArgs.FullPath
    $name = $Event.SourceEventArgs.Name
@@ -107,13 +108,10 @@ function Test-LockedFile {
                 # the file has been written out....
                 Write-Host "file size of $path is " (Get-Item $path).length
                 Start-Sleep -Seconds .1 
-
-                
                 $i++
                     # If the file stays at 0 bytes, get out of the loop and forget this file...
                     # means there is a download
                 if ($i=11) {continue processingLoop}
-                 
              }
                      
             # File Checks -- if file is locked, don't try to move it...
@@ -122,7 +120,6 @@ function Test-LockedFile {
             }
             # Move File
             Move-Item $path -Destination $destination -Force -Verbose
-            Start-Sleep -Seconds .1
             # build the path to the archived .aac file and the mp3 conversion target
             $SourceFileName = Split-Path $path -Leaf                            # grabs just the file name off the full path
             $DestinationAACwoQuotes = Join-Path $destination $SourceFileName    # bolt the file name to the destination path
@@ -138,7 +135,8 @@ function Test-LockedFile {
             Write-Host "DestinationAAC: $DestinationAAC  "(Get-Item $DestinationAAC).length "and "([System.IO.File]::Exists($DestinationAAC)) " and "
             Write-Host "DestinationAACwoQuotes: $DestinationAACwoQuotes  "(Get-Item $DestinationAACwoQuotes).length "and "([System.IO.File]::Exists($DestinationAACwoQuotes)) " and "
             
-
+            # We have to do this test, because it seems that vlc will create a 0 byte
+            # destination mp3 file even when the source file does not exist!
             if (((Get-Item $DestinationAACwoQuotes).length -gt 0kb) -and  ([System.IO.File]::Exists($DestinationAACwoQuotes)))
                 {
                     # This is the vlc command line to convert from aac/wav/mp4 to .mp3

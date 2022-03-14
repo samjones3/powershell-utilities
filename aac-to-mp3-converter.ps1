@@ -124,6 +124,7 @@ function Test-LockedFile {
             $SourceFileName = Split-Path $path -Leaf                            # grabs just the file name off the full path
             $DestinationAACwoQuotes = Join-Path $destination $SourceFileName    # bolt the file name to the destination path
             $DestinationAAC = "`"$DestinationAACwoQuotes`""                     # fully quote the destination, otherwise the Hebrew and space chars trash the vlc command
+            $SourceFileName = $SourceFileName  -replace '[,"]'                  # strip out problem chars in file name
             $MP3FileName = [System.IO.Path]::ChangeExtension($SourceFileName,".mp3")
             $DestinationMP3woQuotes = Join-Path $DestinationDirMP3 $MP3FileName # do the same thing with the mp3 output file name...
             $DestinationMP3 = "`"$DestinationMP3woQuotes`""

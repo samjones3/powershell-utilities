@@ -18,7 +18,7 @@
 
 # Usage:
 # Raf creates an icon to this ps1 in his startup folder:
-# %appdata%\Microsoft\Windows\Start Menu\Programs\Startup
+#       %appdata%\Microsoft\Windows\Start Menu\Programs\Startup
 # The target for the shortcut is:
 #     C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -NoProfile -File C:\develop\utils\powershell\aac-to-mp3-converter.ps1
 #
@@ -34,7 +34,7 @@ $file_name_filter = '*.*'           # We look all new files, since we cannot fil
                                     # Basically, we can either register multiple events (one per extension)
                                     # or we look for all file create events, and filter in our code. This script
                                     # does the latter.
-$extensionarray = '.aac', '.wav', '.mp4'    # array of extensions we are interested in. Just add to this list to convert to mp3
+$extensionarray = '.aac', '.wav', '.mp4', '.webm'    # array of extensions we are interested in. Just add to this list to convert to mp3
 $eventname = 'FileCreatedEvent2'
 $destination = 'c:\temp\test\arc\'  # where to archive downloaded files
 # literal Hebrew strings ALSO must be in double-quotes... single quotes don't work around unicode in powershell.

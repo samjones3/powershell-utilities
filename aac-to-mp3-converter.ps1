@@ -129,7 +129,7 @@ function Test-LockedFile {
             $DestinationMP3woQuotes = Join-Path $DestinationDirMP3 $MP3FileName # do the same thing with the mp3 output file name...
             $DestinationMP3 = "`"$DestinationMP3woQuotes`""
             # This next must be double quoted so the powershell variable substitution will do its magic.
-            $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=32000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
+            $VLCArgs = "-I dummy -vvv $DestinationAAC --sout=#transcode{acodec=mp3,ab=48,channels=2,samplerate=192000}:standard{access=file,mux=ts,dst=$DestinationMP3} vlc://quit"
             Write-Host "args $VLCArgs"
 
             # The following section shows that the file test functions fail if the file name is double quoted...

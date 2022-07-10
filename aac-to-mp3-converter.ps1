@@ -36,7 +36,9 @@ $file_name_filter = '*.*'           # We look all new files, since we cannot fil
                                     # does the latter.
 $extensionarray = '.aac', '.wav', '.mp4', '.webm'    # array of extensions we are interested in. Just add to this list to convert to mp3
 $eventname = 'FileCreatedEvent2'
-$destination = 'c:\temp\test\arc\'  # where to archive downloaded files
+$destinationScratchDir = 'c:\temp\test\arc\'  # where to archive downloaded files
+$VLCScrachInputFile = 'VLCScratchInput'
+$VLCScrachOutputFile = 'VLCScratchOutput'
 # literal Hebrew strings ALSO must be in double-quotes... single quotes don't work around unicode in powershell.
 # below with hebrew in the string only works if this .ps1 file has a BOM!!  No BOM, the script barfs!
 $DestinationDirMP3 = "C:\data\personal\עברית\cardbuilding\audio-files\hinative"
@@ -67,6 +69,7 @@ Register-ObjectEvent $Watcher -EventName Changed -SourceIdentifier $eventname -A
    $sizeinbytes = (Get-Item $path).length
 
    Write-Host "The file '$name' with extension '$fileextension' was $changeType at $timeStamp of size $sizeinbytes"
+   Write-Host "a- '$path' and the codecname is '$codecName' and the extensionarray has '$extensionarray' elements"
 
 function Test-LockedFile {
     param ([parameter(Mandatory=$true)][string]$Path)  
@@ -98,7 +101,7 @@ function Test-LockedFile {
          if ($fileextension -eq $extensiontoprocess)
         {
             # OK, at this point the event has fired, and it is time to do stuff.
-            Write-Host "'$path' and the codecname is '$codecName' and the extensionarray has '$extensionarray' elements"
+            Write-Host "b- '$path' and the codecname is '$codecName' and the extensionarray has '$extensionarray' elements"
    
            Write-Host " FILE $path is size "(Get-Item $path).length
            $i = 1 
@@ -119,10 +122,10 @@ function Test-LockedFile {
                 Start-Sleep -Seconds .1
             }
             # Move File
-            Move-Item $path -Destination $destination -Force -Verbose
+            Move-Item $path -Destination $destinationScratchDir -Force -Verbose
             # build the path to the archived .aac file and the mp3 conversion target
             $SourceFileName = Split-Path $path -Leaf                            # grabs just the file name off the full path
-            $DestinationAACwoQuotes = Join-Path $destination $SourceFileName    # bolt the file name to the destination path
+            $DestinationAACwoQuotes = Join-Path $destinationScratchDir $SourceFileName    # bolt the file name to the destination path
             $DestinationAAC = "`"$DestinationAACwoQuotes`""                     # fully quote the destination, otherwise the Hebrew and space chars trash the vlc command
             $SourceFileName = $SourceFileName  -replace '[,"'']'                # strip out problem chars in file name
             $MP3FileName = [System.IO.Path]::ChangeExtension($SourceFileName,".mp3")
@@ -140,8 +143,14 @@ function Test-LockedFile {
             # destination mp3 file even when the source file does not exist!
             if (((Get-Item $DestinationAACwoQuotes).length -gt 0kb) -and  ([System.IO.File]::Exists($DestinationAACwoQuotes)))
                 {
+                    Start-Sleep -Seconds .1
                     # This is the vlc command line to convert from aac/wav/mp4 to .mp3
                     Start-Process -FilePath $VLCExe -ArgumentList $VLCArgs
+                    Start-Sleep -Seconds .1
+                    write-host "$DestinationAACwoQuotes  and  $DestinationMP3"
+                    if (((Get-Item $DestinationMP3).length -gt 0kb) )
+                        {Write-Host "ZERO BYTE OUTPUT! AAAAAAAAAAAACK!"}
+                    
                 } else {
                     Write-Host "NOT CONVERTED: File to convert $DestinationAACwoQuotes is missing or 0 bytes"
                 }
